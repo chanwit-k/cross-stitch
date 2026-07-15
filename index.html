@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cross Stitch Studio</title>
@@ -2569,6 +2570,35 @@ function boot(){
   window.addEventListener('resize',function(){render();});
 }
 window.addEventListener('load', boot);
+</script>
+  <script>
+  // ส่วนที่ 1: เชื่อมต่อกับ Supabase project ของคุณ
+  const SUPABASE_URL = "https://vbizirjhrnwcafdsenar.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiaXppcmpocm53Y2FmZHNlbmFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwODE5NzcsImV4cCI6MjA5OTY1Nzk3N30.fcVhJAMrBsFr-oLrOGHHnwCt1sen-Dwvu91grbH9T2c";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ส่วนที่ 2: ฟังก์ชันเช็คว่า username/password ถูกไหม + ยังไม่หมดอายุ
+  async function checkLogin(username, password) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("username", username)
+      .eq("password", password)
+      .single();
+
+    if (error || !data) {
+      return { success: false, message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" };
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(data.expires_at);
+
+    if (now > expiresAt) {
+      return { success: false, message: "สิทธิ์การใช้งานหมดอายุแล้ว" };
+    }
+
+    return { success: true, message: "เข้าใช้งานสำเร็จ", packageName: data.package_name };
+  }
 </script>
 </body>
 </html>
