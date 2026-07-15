@@ -2600,5 +2600,27 @@ window.addEventListener('load', boot);
     return { success: true, message: "เข้าใช้งานสำเร็จ", packageName: data.package_name };
   }
 </script>
+  <div id="loginOverlay" style="position:fixed;inset:0;background:#1a1714;display:flex;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:#fff;border-radius:12px;padding:32px;width:280px;text-align:center;">
+    <h2 style="font-family:'DM Serif Display',serif;margin:0 0 16px;">เข้าสู่ระบบ</h2>
+    <input id="loginUsername" type="text" placeholder="ชื่อผู้ใช้" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;border:1px solid #e2ddd6;border-radius:6px;">
+    <input id="loginPassword" type="password" placeholder="รหัสผ่าน" style="width:100%;padding:10px;margin-bottom:10px;box-sizing:border-box;border:1px solid #e2ddd6;border-radius:6px;">
+    <button id="loginBtn" style="width:100%;padding:10px;background:#1a1714;color:#fff;border:none;border-radius:6px;cursor:pointer;">เข้าสู่ระบบ</button>
+    <p id="loginError" style="color:#c0392b;font-size:13px;margin-top:10px;"></p>
+  </div>
+</div>
+  <script>
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const username = document.getElementById("loginUsername").value;
+    const password = document.getElementById("loginPassword").value;
+    const result = await checkLogin(username, password);
+
+    if (result.success) {
+      document.getElementById("loginOverlay").style.display = "none";
+    } else {
+      document.getElementById("loginError").textContent = result.message;
+    }
+  });
+</script>
 </body>
 </html>
