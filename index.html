@@ -49,6 +49,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;font-size
 .ctrl{margin-bottom:6px}.ctrl:last-child{margin-bottom:0}
 .cl{display:flex;justify-content:space-between;margin-bottom:2px;font-size:12px}
 .cl span:first-child{color:#8a847c}.cv{font-weight:500}
+.cv-num{width:48px;text-align:right;font-weight:500;font-size:12px;font-family:'DM Sans',sans-serif;border:1px solid #e2ddd6;border-radius:4px;padding:1px 5px;color:#1a1714;background:#fff}
+.cv-num:focus{outline:2px solid #2d6a4f;outline-offset:0;border-color:#2d6a4f}
 input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:#e2ddd6;border-radius:2px;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:#2d6a4f;border:2px solid #fff;box-shadow:0 0 0 1px #2d6a4f}
 select{width:100%;padding:5px 7px;border:1px solid #e2ddd6;border-radius:6px;background:#fff;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
@@ -93,11 +95,11 @@ input[type=checkbox]{accent-color:#2d6a4f;width:13px;height:13px}
 <div id="sb-body">
 
 <div class="sec"><div class="sec-t">Stitch Size</div><div class="sec-b">
-<div class="ctrl"><div class="cl"><span>Width</span><span class="cv" id="szwv">40</span></div>
+<div class="ctrl"><div class="cl"><span>Width <span style="color:#c3bfb6;font-size:10px">(10-500)</span></span><input type="number" class="cv-num" id="szwv" value="40" min="10" max="500" onchange="onSzWNum()"></div>
 <input type="range" id="szw" min="10" max="500" value="40" step="5" oninput="onSzW()"></div>
-<div class="ctrl"><div class="cl"><span>Height</span><span class="cv" id="szhv">40</span></div>
+<div class="ctrl"><div class="cl"><span>Height <span style="color:#c3bfb6;font-size:10px">(10-500)</span></span><input type="number" class="cv-num" id="szhv" value="40" min="10" max="500" onchange="onSzHNum()"></div>
 <input type="range" id="szh" min="10" max="500" value="40" step="5" oninput="onSzH()"></div>
-<div class="cb-row"><input type="checkbox" id="szlock" checked><label for="szlock">Lock W=H</label></div>
+<div class="cb-row"><input type="checkbox" id="szlock" checked onchange="onLockToggle()"><label for="szlock">Lock ratio</label></div>
 <div class="btn-r" style="margin-top:5px"><button class="btn pr" style="width:100%;font-size:11px" onclick="matchImageRatio()" title="ปรับ W/H ให้ตรงกับ aspect ratio ของภาพต้นฉบับ">📐 Match image ratio</button></div>
 <div id="ratio-info" style="font-size:10px;color:#8a847c;margin-top:3px;text-align:center;display:none"></div>
 </div></div>
@@ -1484,31 +1486,69 @@ function updSt(){
   var ct=parseInt(document.getElementById('fab').value);
   document.getElementById('fcm').textContent=(COLS/ct*2.54).toFixed(1)+' x '+(ROWS/ct*2.54).toFixed(1)+' cm';
 }
-function onSzW(){
-  var v=parseInt(document.getElementById('szw').value);
-  document.getElementById('szwv').textContent=v;
+// szRatio = อัตราส่วน W/H ที่จะล็อกไว้เวลา "Lock ratio" ถูกติ๊ก (1 = สี่เหลี่ยมจัตุรัส, ค่าอื่นๆ = ตามรูปที่ match ไว้)
+var szRatio=1;
+var SZ_MIN=10, SZ_MAX=500;
+
+function onLockToggle(){
+  // เวลาผู้ใช้กดติ๊กล็อกเอง (ไม่ได้มาจากปุ่ม Match image ratio) ให้จับอัตราส่วนปัจจุบันบนหน้าจอไว้
   if(document.getElementById('szlock').checked){
-    document.getElementById('szh').value=v;
-    document.getElementById('szhv').textContent=v;
-    ROWS=v;
+    var w=parseInt(document.getElementById('szw').value);
+    var h=parseInt(document.getElementById('szh').value);
+    szRatio=w/h;
   }
+}
+
+function applyWidth(v){
+  v=Math.min(SZ_MAX,Math.max(SZ_MIN,v));
+  document.getElementById('szw').value=v;
+  document.getElementById('szwv').value=v;
   COLS=v;
+  if(document.getElementById('szlock').checked){
+    var h=Math.round(v/szRatio);
+    h=Math.min(SZ_MAX,Math.max(SZ_MIN,h));
+    document.getElementById('szh').value=h;
+    document.getElementById('szhv').value=h;
+    ROWS=h;
+  } else {
+    ROWS=parseInt(document.getElementById('szh').value);
+  }
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   VX=0;VY=0;szCanvas();updSt();fitZoom();
   if(refSrc)cvtRef();
 }
-function onSzH(){
-  var v=parseInt(document.getElementById('szh').value);
-  document.getElementById('szhv').textContent=v;
-  if(document.getElementById('szlock').checked){
-    document.getElementById('szw').value=v;
-    document.getElementById('szwv').textContent=v;
-    COLS=v;
-  }
+function applyHeight(v){
+  v=Math.min(SZ_MAX,Math.max(SZ_MIN,v));
+  document.getElementById('szh').value=v;
+  document.getElementById('szhv').value=v;
   ROWS=v;
+  if(document.getElementById('szlock').checked){
+    var w=Math.round(v*szRatio);
+    w=Math.min(SZ_MAX,Math.max(SZ_MIN,w));
+    document.getElementById('szw').value=w;
+    document.getElementById('szwv').value=w;
+    COLS=w;
+  } else {
+    COLS=parseInt(document.getElementById('szw').value);
+  }
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   VX=0;VY=0;szCanvas();updSt();fitZoom();
   if(refSrc)cvtRef();
+}
+
+// เรียกจากแท่งเลื่อน (slider)
+function onSzW(){ applyWidth(parseInt(document.getElementById('szw').value)); }
+function onSzH(){ applyHeight(parseInt(document.getElementById('szh').value)); }
+// เรียกจากช่องกรอกตัวเลข (number input)
+function onSzWNum(){
+  var v=parseInt(document.getElementById('szwv').value);
+  if(isNaN(v))return;
+  applyWidth(v);
+}
+function onSzHNum(){
+  var v=parseInt(document.getElementById('szhv').value);
+  if(isNaN(v))return;
+  applyHeight(v);
 }
 function onSz(){onSzW();}
 
@@ -1537,26 +1577,27 @@ function matchImageRatio(){
     newW=Math.round(base*ratio/5)*5;
   }
   // Clamp to slider range
-  newW=Math.min(300,Math.max(10,newW));
-  newH=Math.min(300,Math.max(10,newH));
+  newW=Math.min(SZ_MAX,Math.max(SZ_MIN,newW));
+  newH=Math.min(SZ_MAX,Math.max(SZ_MIN,newH));
 
-  // Uncheck lock so W≠H is allowed
-  document.getElementById('szlock').checked=false;
+  // ล็อกอัตราส่วนไว้ตามรูปจริง (ไม่ใช่ปลดล็อก) เพื่อให้ลากแท่งไหนก็ได้ อีกด้านขยับตามเสมอ
+  szRatio=newW/newH;
+  document.getElementById('szlock').checked=true;
 
   // Apply W
   document.getElementById('szw').value=newW;
-  document.getElementById('szwv').textContent=newW;
+  document.getElementById('szwv').value=newW;
   COLS=newW;
 
   // Apply H
   document.getElementById('szh').value=newH;
-  document.getElementById('szhv').textContent=newH;
+  document.getElementById('szhv').value=newH;
   ROWS=newH;
 
   // Show info
   var ri=document.getElementById('ratio-info');
   ri.style.display='block';
-  ri.textContent='ภาพต้นฉบับ '+iw+'×'+ih+' → pattern '+newW+'×'+newH;
+  ri.textContent='ภาพต้นฉบับ '+iw+'×'+ih+' → pattern '+newW+'×'+newH+' (ล็อกอัตราส่วนนี้ไว้แล้ว)';
 
   grid=Array.from({length:ROWS},function(){return new Array(COLS).fill(-1);});
   VX=0;VY=0;szCanvas();updSt();fitZoom();
